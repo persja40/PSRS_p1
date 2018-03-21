@@ -19,9 +19,9 @@ $(TARGET): main.cpp $(OBJECTS)
 .c.o:
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-#run on one maschine
+#run on one machine with 4 cores
 run:
-	./program
+	mpiexec -n 3 ./program
 
 .PHONY: clean
 
