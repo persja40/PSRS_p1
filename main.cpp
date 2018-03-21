@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 		ifile.close();
 	}
 	vector<int> local_size{};   //size of local vectors
-	vector<int> local_starts{}; //size of local vectors
+	vector<int> local_starts{}; //starts of local vectors
 	int par_size = arr.size() / numprocs;
 	for (int i = 0; i < numprocs; i++)
 	{
@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
 	}
 	// for(auto &e : local_size) //test partitioning
 	// 	cout<<e<<endl;
+	//Nie wiem czy potrzebne
 	vector<vector<int>> results{}; // vector to receive data
 	int res_size;
 	for (int i = 0; i < numprocs; i++)
@@ -49,19 +50,12 @@ int main(int argc, char *argv[])
 	}
 
 	//PHASE II DO POPRAWY
-	MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[0], &local_starts[0], MPI::INT,
-								 &results[myid], local_size[myid], MPI::INT, 0);
-	// if (myid == 0)
-	// {
-	// 	MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[0], &local_starts[0], MPI::INT,
-	// 							 &results[myid], local_size[myid], MPI::INT, 0);
-	// }
-	// else
-	// {
-	// 	// MPI::COMM_WORLD.Scatterv(&arr[myid * par_size], &local_size[myid], MPI::INT,
-	// 	// 						 &arr[0], &results[myid], MPI::INT, 0);
-	// }
-	sort(begin(arr), end(arr));
+	if (myid == 0)
+		MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[0], &local_starts[0], MPI::INT, MPI_IN_PLACE, local_size[myid], MPI::INT, 0);
+	else
+		MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[0], &local_starts[0], MPI::INT, &arr[0], local_size[myid], MPI::INT, 0);
+		
+	std::sort(begin(arr), end(arr));
 
 	//ENDING
 	//write to file
