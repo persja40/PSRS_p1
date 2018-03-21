@@ -10,15 +10,15 @@ int main(int argc, char *argv[])
 {
 	vector<int> arr{};
 	//read data from file
-	ifstream file;
-	file.open("example.txt");
-	while (!file.eof())
+	ifstream ifile;
+	ifile.open("example.txt");
+	while (!ifile.eof())
 	{
 		int t;
-		file >> t;
+		ifile >> t;
 		arr.push_back(t);
 	}
-	file.close();
+	ifile.close();
 
 	//test
 	sort(begin(arr), end(arr));
@@ -28,9 +28,13 @@ int main(int argc, char *argv[])
 	numprocs = MPI::COMM_WORLD.Get_size();
 	myid = MPI::COMM_WORLD.Get_rank();
 
-	//test print
+	//write to file
+	ofstream ofile;
+	ofile.open("result.txt");
 	for (auto &e : arr)
-		cout << e << " ";
+		ofile << e << " ";
+	ofile.close();
+
 	cout << endl
 		 << "Hello world" << endl;
 
