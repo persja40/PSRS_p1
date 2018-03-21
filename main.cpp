@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 	MPI::Init(argc, argv);
 	numprocs = MPI::COMM_WORLD.Get_size();
 	myid = MPI::COMM_WORLD.Get_rank();
-
+        int arr_size;
 	if(myid == 0)
 	{ // read data from file
 		ifstream ifile;
@@ -26,14 +26,16 @@ int main(int argc, char *argv[])
 			arr.push_back(t);
 		}
 		ifile.close();
+                arr_size = arr.size();
 	}
+        MPI::COMM_WORLD.Bcast(&arr_size, 1, MPI_INT, 0);
 	vector<int> local_size{};   // size of local vectors
 	vector<int> local_starts{}; // starts of local vectors
-	int par_size = arr.size() / numprocs;
+	int par_size = arr_size / numprocs;
 	for(int i = 0; i < numprocs; i++)
 	{
 		if(i == numprocs - 1)
-			local_size.push_back(arr.size() - i * par_size);
+			local_size.push_back(arr_size - i * par_size);
 		else
 			local_size.push_back(par_size);
 		local_starts.push_back(i * par_size);
@@ -49,14 +51,19 @@ int main(int argc, char *argv[])
 		results.push_back(el);
 	}
 
-	// PHASE II DO POPRAWY
+	// PHASE II
 	if(myid == 0)
 		MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[0], &local_starts[0], MPI::INT, MPI_IN_PLACE, local_size[myid], MPI::INT, 0);
 	else
 		MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[0], &local_starts[0], MPI::INT, &arr[0], local_size[myid], MPI::INT, 0);
 		
-	std::sort(begin(arr), end(arr));
+	std::sort(begin(arr), begin(arr)+local_size[myid]);
 
+        //vector<int> pivots{};
+        //for(int i=0; i<numprocs; i++)
+          //  samples.push_back(arr[i*local_size[myid]/numprocs]);
+//cout << local_size[myid] << "\t" << numprocs << endl;
+        //cout << samples[0] << endl;
 	// ENDING
 	// write to file
 	ofstream ofile;
@@ -67,4 +74,4 @@ int main(int argc, char *argv[])
 
 	MPI::Finalize();
 	return 0;
-}`
+}
