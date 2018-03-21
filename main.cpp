@@ -43,21 +43,22 @@ int main(int argc, char *argv[])
 	// for(auto &e : local_size) // test partitioning
 	// 	cout<<e<<endl;
 	// Nie wiem czy potrzebne
-	vector<vector<int>> results{}; // vector to receive data
-	int res_size;
+	vector<int> results{}; // vector to receive data
+	/*int res_size;
 	for(int i = 0; i < numprocs; i++)
 	{
 		vector<int> el{};
 		results.push_back(el);
 	}
-
+*/
 	// PHASE II
+	results.resize(local_size[myid]);
 	if(myid == 0)
-		MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[0], &local_starts[0], MPI::INT, MPI_IN_PLACE, local_size[myid], MPI::INT, 0);
+		MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[myid], &local_starts[myid], MPI::INT, &results[0], local_size[myid], MPI::INT, 0);
 	else
-		MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[0], &local_starts[0], MPI::INT, &arr[0], local_size[myid], MPI::INT, 0);
-		
-	std::sort(begin(arr), begin(arr)+local_size[myid]);
+		MPI::COMM_WORLD.Scatterv(&arr[0], &local_size[myid], &local_starts[myid], MPI::INT, &results[0], local_size[myid], MPI::INT, 0);
+	
+	std::sort(begin(results), end(results));
 
         //vector<int> pivots{};
         //for(int i=0; i<numprocs; i++)
