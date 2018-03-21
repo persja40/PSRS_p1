@@ -27,11 +27,27 @@ int main(int argc, char *argv[])
 		}
 		ifile.close();
 	}
+	vector<int> local_size{}; //size of local vectors
+	int par_size= arr.size()/numprocs;
+	for(int i=0; i<numprocs; i++)
+		if(i==numprocs-1)
+			local_size.push_back( arr.size() - i*par_size);
+		else
+			local_size.push_back(par_size);
+	// for(auto &e : local_size) //test partitioning
+	// 	cout<<e<<endl;
 
 	//PHASE II
-
-	//test
-	//sort(begin(arr), end(arr));
+	if (myid == 0)
+	{
+		int a;
+		//MPI::COMM_WORLD.Scatterv( arr,local_size[myid],  MPI::INT,0);
+	}
+	else
+	{
+		int a=5;
+	}
+	sort(begin(arr), end(arr));
 
 	//ENDING
 	//write to file
