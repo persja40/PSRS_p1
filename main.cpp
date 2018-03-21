@@ -27,26 +27,26 @@ int main(int argc, char *argv[])
 		}
 		ifile.close();
 	}
-	vector<int> local_size{}; //size of local vectors
-	int par_size= arr.size()/numprocs;
-	for(int i=0; i<numprocs; i++)
-		if(i==numprocs-1)
-			local_size.push_back( arr.size() - i*par_size);
-		else
-			local_size.push_back(par_size);
-	// for(auto &e : local_size) //test partitioning
-	// 	cout<<e<<endl;
 
-	//PHASE II
-	if (myid == 0)
+	int par_size = arr.size() / numprocs;
+	vector<vector<int>> results{}; // vector to receive data
+	for (int i = 0; i < numprocs; i++)
 	{
-		int a;
-		//MPI::COMM_WORLD.Scatterv( arr,local_size[myid],  MPI::INT,0);
+		vector<int> el{};
+		results.push_back(el);
 	}
-	else
-	{
-		int a=5;
-	}
+
+	//PHASE II DO POPRAWY
+	// if (myid == 0)
+	// {
+	// 	MPI::COMM_WORLD.Scatterv(&arr[myid * par_size], &local_size[myid], MPI::INT,
+	// 							 MPI_IN_PLACE, &results[myid], MPI::INT, 0);
+	// }
+	// else
+	// {
+	// 	MPI::COMM_WORLD.Scatterv(&arr[myid * par_size], &local_size[myid], MPI::INT,
+	// 							 &arr[0], &results[myid], MPI::INT, 0);
+	// }
 	sort(begin(arr), end(arr));
 
 	//ENDING
