@@ -42,8 +42,7 @@ int main(int argc, char *argv[])
 			local_partition_size.push_back(par_size);
 		local_partition_starts.push_back(i * par_size);
 	}
-	vector<int> data_partition{};					   // vector to receive data
-	data_partition.resize(local_partition_size[myid]); // get ready to receive data
+	vector<int> data_partition(local_partition_size[myid]); // vector to receive data
 
 	// PHASE II
 	MPI::COMM_WORLD.Scatterv(unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI::INT, data_partition.data(), local_partition_size.data()[myid], MPI::INT, 0);
@@ -53,33 +52,32 @@ int main(int argc, char *argv[])
 		local_samples.push_back(data_partition[static_cast<int>(i * unsorted_data_size / pow(numprocs, 2))]);
 
 	//OK - DELETE AT THE END
-
-	stringstream ss;
-	ss << "result_" << myid << ".txt";
-	ofstream test_file;
-	test_file.open(ss.str());
-	for (auto &e : local_samples)
-		test_file << e << " ";
-	test_file.close();
+	// stringstream ss;
+	// ss << "result_" << myid << ".txt";
+	// ofstream test_file;
+	// test_file.open(ss.str());
+	// for (auto &e : local_samples)
+	// 	test_file << e << " ";
+	// test_file.close();
 
 	//PHASE III
-	vector<int> pivots{};
-	pivots.reserve(numprocs * numprocs); //p elements from p processes
+	vector<int> pivots(numprocs * numprocs); //p elements from p processes
+	vector<int> pivots_bcast{};
 	MPI::COMM_WORLD.Gather(local_samples.data(), numprocs, MPI_INT, &pivots.data()[myid * numprocs], numprocs, MPI_INT, 0);
 	if (myid == 0)
 	{
-		cout << "CZEMU NIE DZIALA?" << endl;
-		for (auto &e : pivots)
-			cout << e << " ";
-		cout << endl
-			 << pivots.size();
+		sort(begin(pivots), end(pivots));
+		for (int i = numprocs; i < pivots.size(); i += numprocs)
+			pivots_bcast.push_back(pivots[i]);
+		// for (auto &e : pivots_bcast)
+		// 	cout << e << " ";
 	}
+	else
+		pivots_bcast.resize(numprocs - 1);
+	
+	MPI::COMM_WORLD.Bcast(pivots_bcast.data(), pivots_bcast.size(), MPI::INT, 0);
 
-	//vector<int> pivots{};
-	//for(int i=0; i<numprocs; i++)
-	//  samples.push_back(unsorted_data[i*local_partition_size[myid]/numprocs]);
-	//cout << local_partition_size[myid] << "\t" << numprocs << endl;
-	//cout << samples[0] << endl;
+	//PHASE IV
 
 	// ENDING
 	// write to file
