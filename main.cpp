@@ -78,6 +78,16 @@ int main(int argc, char *argv[])
 	MPI::COMM_WORLD.Bcast(pivots_bcast.data(), pivots_bcast.size(), MPI::INT, 0);
 
 	//PHASE IV
+	vector<vector<int>::iterator> iters;//iterators to cut data_partition
+	iters.push_back(begin(pivots_bcast));
+	vector<int>::iterator tmp= begin(pivots_bcast);
+	for(auto &e: pivots_bcast){
+		tmp= upper_bound(tmp, end(pivots_bcast), e-1);//finds iterator greater than val
+		iters.push_back(tmp);
+	}
+	iters.push_back(end(pivots_bcast));
+	//COMMUNICATION TO DO
+
 
 	// ENDING
 	// write to file
