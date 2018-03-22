@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 			local_partition_size.push_back(par_size);
 		local_partition_starts.push_back(i * par_size);
 	}
-	vector<int> data_partition{};			   // vector to receive data
+	vector<int> data_partition{};					   // vector to receive data
 	data_partition.resize(local_partition_size[myid]); // get ready to receive data
 
 	// PHASE II
@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
 		local_samples.push_back(data_partition[static_cast<int>(i * unsorted_data_size / pow(numprocs, 2))]);
 
 	//OK - DELETE AT THE END
+
 	stringstream ss;
 	ss << "result_" << myid << ".txt";
 	ofstream test_file;
@@ -62,6 +63,17 @@ int main(int argc, char *argv[])
 	test_file.close();
 
 	//PHASE III
+	vector<int> pivots{};
+	pivots.reserve(numprocs * numprocs); //p elements from p processes
+	MPI::COMM_WORLD.Gather(local_samples.data(), numprocs, MPI_INT, &pivots.data()[myid * numprocs], numprocs, MPI_INT, 0);
+	if (myid == 0)
+	{
+		cout << "CZEMU NIE DZIALA?" << endl;
+		for (auto &e : pivots)
+			cout << e << " ";
+		cout << endl
+			 << pivots.size();
+	}
 
 	//vector<int> pivots{};
 	//for(int i=0; i<numprocs; i++)
