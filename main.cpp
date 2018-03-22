@@ -3,6 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
+#include <cmath>
 
 #include "mpi.h"
 using namespace std;
@@ -47,19 +48,20 @@ int main(int argc, char *argv[])
 	// PHASE II
 	MPI::COMM_WORLD.Scatterv(unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI::INT, data_partition.data(), local_partition_size.data()[myid], MPI::INT, 0);
 	std::sort(begin(data_partition), end(data_partition));
+	vector<int> local_samples{};
+	for (int i = 0; i < numprocs; i++)
+		local_samples.push_back(data_partition[static_cast<int>(i * unsorted_data_size / pow(numprocs, 2))]);
 
-/* OK - DELETE AT THE END
+	//OK - DELETE AT THE END
 	stringstream ss;
 	ss << "result_" << myid << ".txt";
 	ofstream test_file;
 	test_file.open(ss.str());
-	for (auto &e : data_partition)
+	for (auto &e : local_samples)
 		test_file << e << " ";
 	test_file.close();
-*/
 
 	//PHASE III
-
 
 	//vector<int> pivots{};
 	//for(int i=0; i<numprocs; i++)
