@@ -74,20 +74,47 @@ int main(int argc, char *argv[])
 	}
 	else
 		pivots_bcast.resize(numprocs - 1);
-	
+
 	MPI::COMM_WORLD.Bcast(pivots_bcast.data(), pivots_bcast.size(), MPI::INT, 0);
 
 	//PHASE IV
-	vector<vector<int>::iterator> iters;//iterators to cut data_partition
-	iters.push_back(begin(pivots_bcast));
-	vector<int>::iterator tmp= begin(pivots_bcast);
-	for(auto &e: pivots_bcast){
-		tmp= upper_bound(tmp, end(pivots_bcast), e-1);//finds iterator greater than val
-		iters.push_back(tmp);
+	vector<int> iters; //lengths of subarrays in process
+	auto tmp = begin(data_partition);
+	for (auto &e : pivots_bcast)
+	{
+		auto t = upper_bound(tmp, end(data_partition), e - 1); //finds iterator greater than val
+		iters.push_back(t - tmp);
+		tmp = t;
 	}
-	iters.push_back(end(pivots_bcast));
-	//COMMUNICATION TO DO
+	iters.push_back(end(data_partition) - tmp);
 
+	vector<int> ind_move(numprocs * numprocs);
+	MPI::COMM_WORLD.Gather(iters.data(), numprocs, MPI_INT, &ind_move.data()[myid * numprocs], numprocs, MPI::INT, 0); //gather subarray sizes
+	MPI::COMM_WORLD.Gatherv(data_partition.data(), local_partition_size.data()[myid], MPI_INT,
+							unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI_INT, 0); //gathers all arrays
+
+	//MAKING ARRAYS TO SEND
+	if (myid == 0)
+	{
+		vector<vector<int>> arr_to_send(numprocs);
+		for (int i = 0; i < numprocs; i++) //process nr
+		{
+			int t=i;
+			for (int j = 0; j < numprocs; j++)//nr accessed proccess
+			{
+				// for (int k = 0; k < ?; k++) TO DO
+			}
+		}
+	}
+	//!!!THINK!!! avoid Bcast, better send/rec	root->process
+	// MPI::COMM_WORLD.Bcast(ind_move.data(),numprocs * numprocs , MPI_INT, 0);
+	// MPI::COMM_WORLD.Bcast(unsorted_data.data(), unsorted_data_size, MPI_INT, 0);
+
+	// if(myid==0){
+	// 	for(auto &e:unsorted_data)
+	// 		cout<<e<<" ";
+	// 	cout<<endl;
+	// }
 
 	// ENDING
 	// write to file
