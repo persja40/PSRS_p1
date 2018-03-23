@@ -91,8 +91,7 @@ int main(int argc, char *argv[])
 
 	vector<int> ind_move(numprocs * numprocs);
 	MPI::COMM_WORLD.Gather(iters.data(), numprocs, MPI_INT, &ind_move.data()[myid * numprocs], numprocs, MPI::INT, 0); //gather subarray sizes
-	MPI::COMM_WORLD.Gatherv(data_partition.data(), local_partition_size.data()[myid], MPI_INT,
-							unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI_INT, 0); //gathers all arrays
+	MPI::COMM_WORLD.Gatherv(data_partition.data(), local_partition_size.data()[myid], MPI_INT, unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI_INT, 0); //gathers all arrays
 
 	vector<int> final_local_sizes{};
 	vector<vector<int>> arr_to_send{};
@@ -116,15 +115,25 @@ int main(int argc, char *argv[])
 
 	MPI::COMM_WORLD.Bcast(final_local_sizes.data(), numprocs, MPI_INT, 0);
 	data_partition.resize(final_local_sizes[myid]);
-	//DO NOT WORK CHECK WHY
 	if (myid == 0) //send data to local arrays
 	{
 		data_partition.swap(arr_to_send[0]);
-		for (int i = i; i < numprocs; i++)
+		for (int i = 1; i < numprocs; i++)
 			MPI::COMM_WORLD.Send(arr_to_send[i].data(), final_local_sizes[i], MPI_INT, i, i);
 	}
 	else
 		MPI::COMM_WORLD.Recv(data_partition.data(), final_local_sizes[myid], MPI_INT, 0, myid);
+
+    
+	std::sort(begin(data_partition), end(data_partition));
+
+        stringstream ss;
+        ss << "result_" << myid << ".txt";
+        ofstream test_file;
+        test_file.open(ss.str());
+        for (auto &e : local_samples)
+            test_file << e << " ";
+        test_file.close();
 
 	// if (myid == 1)
 	// {
@@ -135,11 +144,14 @@ int main(int argc, char *argv[])
 
 	// ENDING
 	// write to file
-	ofstream ofile;
-	ofile.open("result.txt");
-	for (auto &e : unsorted_data)
+            MPI::COMM_WORLD.Gather(data_partition.data(), numprocs, MPI_INT, unsorted_data.data(), numprocs, MPI_INT, 0);
+        if(myid == 0) {
+	    ofstream ofile;
+	    ofile.open("result.txt");
+	    for (auto &e : unsorted_data)
 		ofile << e << " ";
-	ofile.close();
+	    ofile.close();
+        }
 
 	MPI::Finalize();
 	return 0;

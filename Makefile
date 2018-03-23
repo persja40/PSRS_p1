@@ -26,4 +26,4 @@ run:
 .PHONY: clean
 
 clean:
-	rm -f  $(TARGET) *.o
+	rm -f  $(TARGET) *.o result*
