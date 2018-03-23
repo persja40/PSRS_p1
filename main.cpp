@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
+#include <numeric>
 #include <vector>
 #include <cmath>
 
@@ -93,27 +94,43 @@ int main(int argc, char *argv[])
 	MPI::COMM_WORLD.Gatherv(data_partition.data(), local_partition_size.data()[myid], MPI_INT,
 							unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI_INT, 0); //gathers all arrays
 
-	//MAKING ARRAYS TO SEND
+	vector<int> final_local_sizes{};
+	vector<vector<int>> arr_to_send{};
 	if (myid == 0)
 	{
-		vector<vector<int>> arr_to_send(numprocs);
-		for (int i = 0; i < numprocs; i++) //process nr
-		{
-			int t=i;
-			for (int j = 0; j < numprocs; j++)//nr accessed proccess
+		arr_to_send.resize(numprocs);
+		for (int i = 0; i < numprocs; i++)	 //process nr
+			for (int j = 0; j < numprocs; j++) //nr accessed proccess
 			{
-				// for (int k = 0; k < ?; k++) TO DO
+				int start_index = j * numprocs + i;
+				int start_data = accumulate(begin(ind_move), begin(ind_move) + start_index, 0);
+				for_each(begin(unsorted_data) + start_data, begin(unsorted_data) + start_data + ind_move[start_index], [&](int e) {
+					arr_to_send[i].push_back(e);
+				});
 			}
-		}
+		for (auto &e : arr_to_send)
+			final_local_sizes.push_back(e.size());
 	}
-	//!!!THINK!!! avoid Bcast, better send/rec	root->process
-	// MPI::COMM_WORLD.Bcast(ind_move.data(),numprocs * numprocs , MPI_INT, 0);
-	// MPI::COMM_WORLD.Bcast(unsorted_data.data(), unsorted_data_size, MPI_INT, 0);
+	else
+		final_local_sizes.resize(numprocs);
 
-	// if(myid==0){
-	// 	for(auto &e:unsorted_data)
-	// 		cout<<e<<" ";
-	// 	cout<<endl;
+	MPI::COMM_WORLD.Bcast(final_local_sizes.data(), numprocs, MPI_INT, 0);
+	data_partition.resize(final_local_sizes[myid]);
+	//DO NOT WORK CHECK WHY
+	if (myid == 0) //send data to local arrays
+	{
+		data_partition.swap(arr_to_send[0]);
+		for (int i = i; i < numprocs; i++)
+			MPI::COMM_WORLD.Send(arr_to_send[i].data(), final_local_sizes[i], MPI_INT, i, i);
+	}
+	else
+		MPI::COMM_WORLD.Recv(data_partition.data(), final_local_sizes[myid], MPI_INT, 0, myid);
+
+	// if (myid == 1)
+	// {
+	// 	for (auto &e : data_partition)
+	// 		cout << e << " ";
+	// 	cout << endl;
 	// }
 
 	// ENDING
