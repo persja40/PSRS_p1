@@ -11,6 +11,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+	vector<int> clean_v{};//it's only to force compiler to free other vectors
 	// PHASE I
 	vector<int> unsorted_data{};
 	int myid, numprocs;
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
 	vector<int> pivots(numprocs * numprocs); //p elements from p processes
 	vector<int> pivots_bcast{};
 	MPI::COMM_WORLD.Gather(local_samples.data(), numprocs, MPI_INT, &pivots.data()[myid * numprocs], numprocs, MPI_INT, 0);
+	local_samples.swap(clean_v);
 	if (myid == 0)
 	{
 		sort(begin(pivots), end(pivots));
@@ -88,11 +90,17 @@ int main(int argc, char *argv[])
 		tmp = t;
 	}
 	iters.push_back(end(data_partition) - tmp);
+	pivots.swap(clean_v);
+	pivots_bcast.swap(clean_v);
 
 	vector<int> ind_move(numprocs * numprocs);
 	MPI::COMM_WORLD.Gather(iters.data(), numprocs, MPI_INT, &ind_move.data()[myid * numprocs], numprocs, MPI::INT, 0); //gather subarray sizes
 	MPI::COMM_WORLD.Gatherv(data_partition.data(), local_partition_size.data()[myid], MPI_INT,
 							unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI_INT, 0); //gathers all arrays
+	iters.swap(clean_v);
+
+	local_partition_size.swap(clean_v);
+	local_partition_starts.swap(clean_v);
 
 	vector<int> final_local_sizes{};
 	vector<vector<int>> arr_to_send{};
@@ -113,6 +121,7 @@ int main(int argc, char *argv[])
 	}
 	else
 		final_local_sizes.resize(numprocs);
+	ind_move.swap(clean_v);
 
 	// PHASE V
 	MPI::COMM_WORLD.Bcast(final_local_sizes.data(), numprocs, MPI_INT, 0);
@@ -125,7 +134,7 @@ int main(int argc, char *argv[])
 	}
 	else
 		MPI::COMM_WORLD.Recv(data_partition.data(), final_local_sizes[myid], MPI_INT, 0, myid);
-
+	arr_to_send.swap(*new vector<vector<int>>{});
 	std::sort(begin(data_partition), end(data_partition));
 
 	// stringstream ss;
