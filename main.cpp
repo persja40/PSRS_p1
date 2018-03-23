@@ -91,7 +91,8 @@ int main(int argc, char *argv[])
 
 	vector<int> ind_move(numprocs * numprocs);
 	MPI::COMM_WORLD.Gather(iters.data(), numprocs, MPI_INT, &ind_move.data()[myid * numprocs], numprocs, MPI::INT, 0); //gather subarray sizes
-	MPI::COMM_WORLD.Gatherv(data_partition.data(), local_partition_size.data()[myid], MPI_INT, unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI_INT, 0); //gathers all arrays
+	MPI::COMM_WORLD.Gatherv(data_partition.data(), local_partition_size.data()[myid], MPI_INT,
+							unsorted_data.data(), &local_partition_size.data()[myid], &local_partition_starts.data()[myid], MPI_INT, 0); //gathers all arrays
 
 	vector<int> final_local_sizes{};
 	vector<vector<int>> arr_to_send{};
@@ -113,6 +114,7 @@ int main(int argc, char *argv[])
 	else
 		final_local_sizes.resize(numprocs);
 
+	// PHASE V
 	MPI::COMM_WORLD.Bcast(final_local_sizes.data(), numprocs, MPI_INT, 0);
 	data_partition.resize(final_local_sizes[myid]);
 	if (myid == 0) //send data to local arrays
@@ -124,35 +126,45 @@ int main(int argc, char *argv[])
 	else
 		MPI::COMM_WORLD.Recv(data_partition.data(), final_local_sizes[myid], MPI_INT, 0, myid);
 
-    
 	std::sort(begin(data_partition), end(data_partition));
 
-        stringstream ss;
-        ss << "result_" << myid << ".txt";
-        ofstream test_file;
-        test_file.open(ss.str());
-        for (auto &e : local_samples)
-            test_file << e << " ";
-        test_file.close();
+	// stringstream ss;
+	// ss << "result_" << myid << ".txt";
+	// ofstream test_file;
+	// test_file.open(ss.str());
+	// for (auto &e : data_partition)
+	// 	test_file << e << " ";
+	// test_file.close();
 
-	// if (myid == 1)
-	// {
-	// 	for (auto &e : data_partition)
-	// 		cout << e << " ";
-	// 	cout << endl;
-	// }
+	// PHASE VI
+	if (myid == 0)
+	{
+		vector<int> final_local_starts{0};
+		int starts = 0;
+		for (auto &e : final_local_sizes)
+		{
+			starts += e;
+			final_local_starts.push_back(starts);
+		}
+		MPI::COMM_WORLD.Gatherv(data_partition.data(), final_local_sizes[myid], MPI_INT,
+								unsorted_data.data(), &final_local_sizes.data()[myid], &final_local_starts.data()[myid], MPI_INT, 0); //again gathers all arrays
+	}
+	else
+		MPI::COMM_WORLD.Gatherv(data_partition.data(), final_local_sizes[myid], MPI_INT,
+								nullptr, nullptr, nullptr, MPI_INT, 0);
 
-	// ENDING
-	// write to file
-            MPI::COMM_WORLD.Gather(data_partition.data(), numprocs, MPI_INT, unsorted_data.data(), numprocs, MPI_INT, 0);
-        if(myid == 0) {
-	    ofstream ofile;
-	    ofile.open("result.txt");
-	    for (auto &e : unsorted_data)
-		ofile << e << " ";
-	    ofile.close();
-        }
+	//ENDING
+	if (myid == 0)
+	{
+		ofstream ofile;
+		ofile.open("result.txt");
+		for (auto &e : unsorted_data)
+			ofile << e << " ";
+		ofile.close();
+	}
 
+	if (myid == 0)
+		cout << "Is it sorted: " << is_sorted(begin(unsorted_data), end(unsorted_data)) << endl;
 	MPI::Finalize();
 	return 0;
 }
