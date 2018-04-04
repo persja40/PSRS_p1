@@ -10,6 +10,7 @@ INCLUDE=
 LIB= #-lpthread -lm -lgsl -lgslcblas # dla lapacka:	LIB= -lm -llapack -lblas
 SOURCES= 
 OBJECTS= $(SOURCES:.cpp=.o)
+ARGS=
 
 TARGET = program
 
@@ -21,7 +22,7 @@ $(TARGET): main.cpp $(OBJECTS)
 
 #run on one machine with 4 cores
 run:
-	mpiexec -n 3 ./program
+	mpiexec -n 3 ./program $(ARGS)
 
 .PHONY: clean
 
